@@ -7,8 +7,17 @@ import (
 
 	"time"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+type PgxIface interface {
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+	QueryRow(ctx context.Context, query string, args ...any) pgx.Row
+	Exec(ctx context.Context, query string, args ...any) (pgconn.CommandTag, error)
+	Begin(ctx context.Context) (pgx.Tx, error)
+}
 
 func InitDB(config utils.DatabaseCofig) (*pgxpool.Pool, error) {
 	// connStr := "user=postgres password=postgres dbname=assignment_with_role sslmode=disable host=192.168.1.12"

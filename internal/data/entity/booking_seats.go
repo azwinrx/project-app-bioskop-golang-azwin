@@ -1,4 +1,4 @@
-package repository
+package entity
 
 type BookingSeatsRepository struct {
 	Id        int

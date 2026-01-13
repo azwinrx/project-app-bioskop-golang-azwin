@@ -1,4 +1,4 @@
-package repository
+package entity
 
 type PaymentMethodsRepository struct {
 	Id        int
