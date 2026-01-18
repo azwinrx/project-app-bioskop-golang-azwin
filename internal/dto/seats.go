@@ -1,17 +1,16 @@
 package dto
 
-import (
-	"time"
-)
-
-type SeatsRequest struct {
-	CinemaId   int    `json:"cinema_id"`
-	SeatNumber string `json:"seat_number"`
+// Seat DTOs
+type SeatResponse struct {
+ID         int    `json:"id"`
+SeatNumber string `json:"seat_number"`
+IsBooked   bool   `json:"is_booked"`
 }
 
-type SeatsResponse struct {
-	Id         int       `json:"id"`
-	CinemaId   int       `json:"cinema_id"`
-	SeatNumber string    `json:"seat_number"`
-	CreatedAt  time.Time `json:"created_at"`
+type SeatsAvailabilityResponse struct {
+CinemaID   int            `json:"cinema_id"`
+CinemaName string         `json:"cinema_name"`
+ShowDate   string         `json:"show_date"`
+ShowTime   string         `json:"show_time"`
+Seats      []SeatResponse `json:"seats"`
 }

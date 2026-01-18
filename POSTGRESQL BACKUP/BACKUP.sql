@@ -425,6 +425,26 @@ CREATE TABLE public.users (
 ALTER TABLE public.users OWNER TO postgres;
 
 --
+-- TOC entry 5999 (class 1259 OID 19999)
+-- Name: sessions; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.sessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id INTEGER NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    revoked_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE
+);
+
+ALTER TABLE public.sessions OWNER TO postgres;
+
+CREATE INDEX idx_sessions_user_id ON public.sessions(user_id);
+CREATE INDEX idx_sessions_expires_at ON public.sessions(expires_at);
+CREATE INDEX idx_sessions_revoked_at ON public.sessions(revoked_at);
+
+--
 -- TOC entry 219 (class 1259 OID 19555)
 -- Name: users_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --

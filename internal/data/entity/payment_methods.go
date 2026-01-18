@@ -1,9 +1,11 @@
 package entity
 
+import "time"
+
 type PaymentMethodsRepository struct {
 	Id        int
 	Name      string
-	LogoURL   string
+	LogoUrl   *string
 	IsActive  bool
-	CreatedAt string
+	CreatedAt time.Time
 }

@@ -5,6 +5,7 @@ import (
 	"project-app-bioskop-golang-azwin/internal/data/entity"
 	"project-app-bioskop-golang-azwin/pkg/database"
 
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -14,6 +15,13 @@ type UsersRepository interface {
 	RegisterUsers(data *entity.UsersRepository) error
 	LoginUsers(email string) (*entity.UsersRepository, error)
 	LogoutUsers(userId int) error
+	
+	// Session methods
+	CreateSession(ctx context.Context, session *entity.Session) error
+	ValidateSession(ctx context.Context, sessionID uuid.UUID) (*entity.Session, error)
+	GetSessionByUserId(ctx context.Context, userId int) (*entity.Session, error)
+	RevokeSession(ctx context.Context, sessionID uuid.UUID) error
+	RevokeAllUserSessions(ctx context.Context, userId int) error
 }
 
 type usersRepository struct {
@@ -103,6 +111,155 @@ func (r *usersRepository) LogoutUsers(userId int) error {
 	}
 	
 	r.Logger.Info("user logged out successfully",
+		zap.Int("user_id", userId),
+	)
+	
+	return nil
+}
+
+// CreateSession creates a new session for a user
+func (r *usersRepository) CreateSession(ctx context.Context, session *entity.Session) error {
+	query := `
+		INSERT INTO sessions (id, user_id, expires_at, created_at)
+		VALUES ($1, $2, $3, $4)
+	`
+	
+	_, err := r.db.Exec(ctx, query, 
+		session.ID,
+		session.UserID,
+		session.ExpiresAt,
+		session.CreatedAt,
+	)
+	
+	if err != nil {
+		r.Logger.Error("failed to create session",
+			zap.String("session_id", session.ID.String()),
+			zap.Int("user_id", session.UserID),
+			zap.Error(err),
+		)
+		return err
+	}
+	
+	r.Logger.Info("session created successfully",
+		zap.String("session_id", session.ID.String()),
+		zap.Int("user_id", session.UserID),
+	)
+	
+	return nil
+}
+
+// ValidateSession validates a session token and returns session details if valid
+func (r *usersRepository) ValidateSession(ctx context.Context, sessionID uuid.UUID) (*entity.Session, error) {
+	query := `
+		SELECT id, user_id, expires_at, revoked_at, created_at
+		FROM sessions
+		WHERE id = $1
+		  AND revoked_at IS NULL
+		  AND expires_at > NOW()
+	`
+	
+	session := &entity.Session{}
+	err := r.db.QueryRow(ctx, query, sessionID).Scan(
+		&session.ID,
+		&session.UserID,
+		&session.ExpiresAt,
+		&session.RevokedAt,
+		&session.CreatedAt,
+	)
+	
+	if err != nil {
+		r.Logger.Error("failed to validate session",
+			zap.String("session_id", sessionID.String()),
+			zap.Error(err),
+		)
+		return nil, err
+	}
+	
+	r.Logger.Info("session validated successfully",
+		zap.String("session_id", session.ID.String()),
+		zap.Int("user_id", session.UserID),
+	)
+
+	return session, nil
+}
+
+// GetSessionByUserId retrieves the latest active session for a user
+func (r *usersRepository) GetSessionByUserId(ctx context.Context, userId int) (*entity.Session, error) {
+	query := `
+		SELECT id, user_id, expires_at, revoked_at, created_at
+		FROM sessions
+		WHERE user_id = $1
+		  AND revoked_at IS NULL
+		  AND expires_at > NOW()
+		ORDER BY created_at DESC
+		LIMIT 1
+	`
+	
+	session := &entity.Session{}
+	err := r.db.QueryRow(ctx, query, userId).Scan(
+		&session.ID,
+		&session.UserID,
+		&session.ExpiresAt,
+		&session.RevokedAt,
+		&session.CreatedAt,
+	)
+	
+	if err != nil {
+		r.Logger.Error("failed to get session by user id",
+			zap.Int("user_id", userId),
+			zap.Error(err),
+		)
+		return nil, err
+	}
+	
+	return session, nil
+}
+
+// RevokeSession revokes a specific session
+func (r *usersRepository) RevokeSession(ctx context.Context, sessionID uuid.UUID) error {
+	query := `
+		UPDATE sessions
+		SET revoked_at = NOW()
+		WHERE id = $1
+		  AND revoked_at IS NULL
+	`
+	
+	_, err := r.db.Exec(ctx, query, sessionID)
+	if err != nil {
+		r.Logger.Error("failed to revoke session",
+			zap.String("session_id", sessionID.String()),
+			zap.Error(err),
+		)
+		return err
+	}
+	
+	r.Logger.Info("session revoked successfully",
+		zap.String("session_id", sessionID.String()),
+	)
+	
+	return nil
+}
+
+// RevokeAllUserSessions revokes all sessions for a specific user
+func (r *usersRepository) RevokeAllUserSessions(ctx context.Context, userId int) error {
+	query := `
+		UPDATE sessions
+		SET revoked_at = NOW()
+		WHERE user_id = $1
+		  AND revoked_at IS NULL
+		  AND expires_at > NOW()
+	`
+	
+	_, err := r.db.Exec(ctx, query, userId)
+	if err != nil {
+		r.Logger.Error("failed to revoke all user sessions",
+			zap.Int("user_id", userId),
+			zap.Error(err),
+		)
+		return err
+	}
+	
+	r.Logger.Info("all user sessions revoked successfully",
 		zap.Int("user_id", userId),
 	)
 	

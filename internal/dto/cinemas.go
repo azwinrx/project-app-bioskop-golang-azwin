@@ -1,20 +1,14 @@
 package dto
 
-import (
-	"time"
-)
-
-type CinemasRequest struct {
-	Name    string `json:"name"`
-	City    string `json:"city"`
-	Address string `json:"address"`
+// Cinema DTOs
+type CinemaResponse struct {
+ID      int    `json:"id"`
+Name    string `json:"name"`
+City    string `json:"city"`
+Address string `json:"address"`
 }
 
-type CinemasResponse struct {
-	Id        int       `json:"id"`
-	Name      string    `json:"name"`
-	City      string    `json:"city"`
-	Address   string    `json:"address"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+type CinemaListResponse struct {
+Cinemas    []CinemaResponse `json:"cinemas"`
+Pagination Pagination       `json:"pagination"`
 }
